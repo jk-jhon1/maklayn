@@ -66,7 +66,17 @@ export const config = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
       redirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback',
       // login de demonstração quando não há credenciais Google configuradas
-      permitirDemo: bool(process.env.ALLOW_DEMO_LOGIN, true)
+      permitirDemo: bool(process.env.ALLOW_DEMO_LOGIN, true),
+      // Endpoints do provedor. Apontam para o Google por padrão; podem ser
+      // trocados para testar com um servidor local (testes/google-falso.mjs)
+      // ou para usar outro provedor compatível com OpenID Connect.
+      endpoints: {
+        auth: process.env.GOOGLE_AUTH_ENDPOINT || 'https://accounts.google.com/o/oauth2/v2/auth',
+        token: process.env.GOOGLE_TOKEN_ENDPOINT || 'https://oauth2.googleapis.com/token',
+        userinfo: process.env.GOOGLE_USERINFO_ENDPOINT || 'https://www.googleapis.com/oauth2/v3/userinfo',
+        tokeninfo: process.env.GOOGLE_TOKENINFO_ENDPOINT || 'https://oauth2.googleapis.com/tokeninfo',
+        jwks: process.env.GOOGLE_JWKS_URI || 'https://www.googleapis.com/oauth2/v3/certs'
+      }
     }
   },
 

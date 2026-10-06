@@ -59,6 +59,13 @@ maklayn:
       client-id: ${GOOGLE_CLIENT_ID:}
       client-secret: ${GOOGLE_CLIENT_SECRET:}
       redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/auth/google/callback}
+      # Endpoints do provedor: apontam para o Google e podem ser trocados para
+      # testes locais (testes/google-falso.mjs) ou outro provedor OpenID Connect.
+      auth-endpoint: ${GOOGLE_AUTH_ENDPOINT:https://accounts.google.com/o/oauth2/v2/auth}
+      token-endpoint: ${GOOGLE_TOKEN_ENDPOINT:https://oauth2.googleapis.com/token}
+      userinfo-endpoint: ${GOOGLE_USERINFO_ENDPOINT:https://www.googleapis.com/oauth2/v3/userinfo}
+      tokeninfo-endpoint: ${GOOGLE_TOKENINFO_ENDPOINT:https://oauth2.googleapis.com/tokeninfo}
+      jwks-uri: ${GOOGLE_JWKS_URI:https://www.googleapis.com/oauth2/v3/certs}
 
   ia:
     # mock | gemini | openai

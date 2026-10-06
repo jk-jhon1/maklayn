@@ -17,9 +17,22 @@ possível de abrir direto no navegador: **https://jk-jhon1.github.io/maklayn/**
 O contrato JSON é idêntico ao do backend Node/Express e Java/Spring Boot — a interface
 não sabe que está falando com um adaptador.
 
+## Login Google nesta demonstração
+
+O login Google **funciona aqui** pelo fluxo do **Google Identity Services**: o Google
+devolve ao navegador um `id_token` assinado e a demonstração confere a assinatura com
+as **chaves públicas** do Google (JWKS) via Web Crypto — sem servidor e sem Client Secret.
+
+Para ativar, informe o seu **Client ID** (informação pública):
+
+- na tela de login do site → campo "Ativar o login Google nesta demonstração"; ou
+- em [`js/config.js`](js/config.js) → `googleClientId`, valendo para todos os visitantes.
+
+Passo a passo: [`configurar-login-google.md`](configurar-login-google.md).
+
 ## O que a demonstração NÃO tem
 
-- **Login Google OAuth 2.0 real** — exige servidor, porque o *Client Secret* nunca pode ir ao navegador.
+- **Fluxo OAuth server-side** (Authorization Code) — exige backend, pois só ele pode guardar o *Client Secret*.
 - **Banco relacional** — os dados ficam no `localStorage` do próprio navegador.
 - **Provedores de IA reais** (Gemini/OpenAI) — a demo usa o motor simulado, sem chaves.
 

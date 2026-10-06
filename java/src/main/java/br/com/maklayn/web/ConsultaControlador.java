@@ -9,6 +9,8 @@ import br.com.maklayn.servico.ConsultaServico;
 import br.com.maklayn.servico.UsuarioServico;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,7 +46,7 @@ public class ConsultaControlador {
     }
 
     @PostMapping
-    public Map<String, Object> executar(HttpServletRequest req, @RequestBody Map<String, Object> corpo)
+    public ResponseEntity<Map<String, Object>> executar(HttpServletRequest req, @RequestBody Map<String, Object> corpo)
         throws Exception {
 
         Usuario usuario = exigirUsuario(req);
@@ -76,7 +78,7 @@ public class ConsultaControlador {
         }
         consulta.put("referencias_detectadas", execucao.getReferenciasDetectadas());
 
-        return Map.of("consulta", consulta);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("consulta", consulta));
     }
 
     @GetMapping

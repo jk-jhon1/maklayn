@@ -13,7 +13,10 @@
     "dev": "node --watch src/server.js",
     "db:migrate": "node src/db/migrate.js",
     "db:reset": "node src/db/reset.js",
-    "teste:demo": "node testes/demo-api.teste.mjs"
+    "teste:demo": "node testes/demo-api.teste.mjs",
+    "teste:login": "node testes/login-google.teste.mjs",
+    "teste:login:java": "MAKLAYN_ALVO=java PORTA_API=3200 node testes/login-google.teste.mjs",
+    "teste:login:demo": "node testes/login-google-demo.teste.mjs"
   },
   "keywords": [
     "maklayn",

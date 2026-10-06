@@ -17,6 +17,12 @@ Duas implementações equivalentes, com a mesma arquitetura e os mesmos endpoint
 
 ---
 
+## 📚 Documentação
+
+- [`docs/configurar-login-google.md`](docs/configurar-login-google.md) — ativar o login Google (passo a passo)
+- [`docs/README.md`](docs/README.md) — como funciona a demonstração do GitHub Pages
+- [`java/README.md`](java/README.md) — versão Java/Spring Boot (JDK 11)
+
 ## 🖥️ Ver a interface (sem instalar nada)
 
 | Forma | Endereço | O que é |
@@ -74,7 +80,12 @@ npm run db:reset   # apaga e recria o banco de desenvolvimento
 
 ## 3. Login com Google (OAuth 2.0) — seção 3 da especificação
 
-Passo a passo:
+> 📘 O passo a passo completo, com as URLs autorizadas, a ativação na demonstração
+> online e a solução dos erros mais comuns está em
+> **[`docs/configurar-login-google.md`](docs/configurar-login-google.md)**.
+> A seção 11 deste README resume como verificar tudo com testes.
+
+Resumo:
 
 1. Acesse o **Google Cloud Console** (`console.cloud.google.com`) e crie um novo projeto.
 2. Vá em **APIs e Serviços → Tela de consentimento OAuth** e preencha o nome do app exibido aos usuários: **Maklayn**.
@@ -94,7 +105,7 @@ O **Client Secret nunca vai para o frontend** — a troca de `code` por tokens a
 | Fluxo | Rota | Quando usar |
 | --- | --- | --- |
 | **Authorization Code (server-side)** | `GET /api/auth/google` → `GET /api/auth/google/callback` | Mais seguro; o `state` é um JWT assinado contra CSRF. |
-| **Google Identity Services** | botão do Google no frontend → `POST /api/auth/google/credential` | O frontend recebe um `id_token` e o servidor valida em `tokeninfo`. |
+| **Google Identity Services** | botão do Google no frontend → `POST /api/auth/google/credential` | O frontend recebe um `id_token`; o servidor (ou, na demonstração estática, as chaves públicas do Google) valida a assinatura. |
 
 Enquanto as credenciais não existem, o **login de demonstração** (`ALLOW_DEMO_LOGIN=true`) permite testar tudo — histórico, referências e banco funcionam igual. Em produção, defina `ALLOW_DEMO_LOGIN=false`.
 
@@ -259,7 +270,52 @@ O bytecode sai com `release=11` (major version **55**), garantido pelo `maven-co
 
 ---
 
-## 11. Publicar no GitHub
+## 11. Login (100% funcional, inclusive Google)
+
+O Maklayn tem **três formas de entrar**, todas funcionando:
+
+| Forma | Onde funciona | Precisa de |
+|---|---|---|
+| **Login de demonstração** | local e online | nada |
+| **Google — botão oficial (GIS)** | local e na [demonstração online](https://jk-jhon1.github.io/maklayn/) | Client ID |
+| **Google — OAuth 2.0 server-side** | versão local (Node/Java) | Client ID + Client Secret |
+
+### Ativar o Google em 3 minutos
+
+👉 **Guia completo: [`docs/configurar-login-google.md`](docs/configurar-login-google.md)**
+
+Resumo: crie um **ID do cliente OAuth** (tipo *Aplicativo da Web*) em
+https://console.cloud.google.com/apis/credentials e cadastre estas URLs:
+
+```
+Origens JavaScript autorizadas:      URIs de redirecionamento autorizados:
+  https://jk-jhon1.github.io           http://localhost:3000/api/auth/google/callback
+  http://localhost:3000                http://localhost:8080/api/auth/google/callback
+  http://localhost:8080
+```
+
+- **Na demonstração online**: cole o *Client ID* na própria tela de login (ou em `docs/js/config.js`).
+  Só o Client ID é necessário — a assinatura do token é conferida com as chaves públicas do Google.
+- **Na aplicação local**: coloque `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no `.env`.
+  O *Client Secret* fica **apenas no backend**, como manda a especificação.
+
+### Verificação automatizada
+
+```bash
+npm run teste:login        # 24 verificações — Node/Express
+npm run teste:login:java   # 24 verificações — Java/Spring Boot  (mesmo teste!)
+npm run teste:login:demo   # 11 verificações — demonstração estática
+npm run teste:demo         # 33 verificações — adaptador da demonstração
+```
+
+Inclui um **Google emulado** (`node testes/google-falso.mjs`) que reproduz os endpoints
+reais com chave RSA de verdade: dá para validar todo o fluxo **sem credenciais**.
+Cobre CSRF (state), código de uso único, secret errado, token de outra aplicação,
+token adulterado, expirado e ausência de configuração.
+
+---
+
+## 12. Publicar no GitHub
 
 O projeto já vem com o histórico Git pronto (2 commits na branch `main`). Para publicar:
 

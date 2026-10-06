@@ -1,5 +1,6 @@
 package br.com.maklayn.web;
 
+import br.com.maklayn.seguranca.GoogleServico;
 import br.com.maklayn.seguranca.JwtServico;
 import br.com.maklayn.servico.UsuarioServico;
 import javax.servlet.http.HttpServletRequest;
@@ -25,7 +26,12 @@ public class TratadorDeErros {
 
     @ExceptionHandler(UsuarioServico.RegraDeNegocioException.class)
     public ResponseEntity<Map<String, Object>> regraDeNegocio(UsuarioServico.RegraDeNegocioException e) {
-        return resposta(e.getStatus(), "REGRA_DE_NEGOCIO", e.getMessage());
+        return resposta(e.getStatus(), e.getCodigo(), e.getMessage());
+    }
+
+    @ExceptionHandler(GoogleServico.ErroGoogle.class)
+    public ResponseEntity<Map<String, Object>> google(GoogleServico.ErroGoogle e) {
+        return resposta(e.getStatus(), e.getCodigo(), e.getMessage());
     }
 
     @ExceptionHandler(JwtServico.TokenInvalidoException.class)

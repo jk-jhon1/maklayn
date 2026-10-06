@@ -20,10 +20,26 @@
 import config from '../config.js';
 import { assinar, verificar } from './jwt.js';
 
-const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
-const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
-const USERINFO_ENDPOINT = 'https://www.googleapis.com/oauth2/v3/userinfo';
-const TOKENINFO_ENDPOINT = 'https://oauth2.googleapis.com/tokeninfo';
+/* Endpoints lidos da configuração — permite apontar para um servidor
+ * de teste (testes/google-falso.mjs) ou outro provedor OpenID Connect. */
+const AUTH_ENDPOINT = () => config.auth.google.endpoints.auth;
+const TOKEN_ENDPOINT = () => config.auth.google.endpoints.token;
+const USERINFO_ENDPOINT = () => config.auth.google.endpoints.userinfo;
+const TOKENINFO_ENDPOINT = () => config.auth.google.endpoints.tokeninfo;
+const JWKS_URI = () => config.auth.google.endpoints.jwks;
+
+/**
+ * Erro de autenticação com status HTTP correto.
+ * Sem isto, falhas de OAuth (código reutilizado, secret errado, state
+ * forjado) chegariam ao cliente como 500 "erro interno" — escondendo a
+ * causa real de quem está integrando.
+ */
+function erroGoogle(mensagem, codigo = 'GOOGLE_FALHOU', status = 401) {
+  const e = new Error(mensagem);
+  e.status = status;
+  e.codigo = codigo;
+  return e;
+}
 
 export const googleConfigurado = () =>
   Boolean(config.auth.google.clientId && config.auth.google.clientSecret);
@@ -45,18 +61,26 @@ export function urlConsentimento({ retorno = '/' } = {}) {
     state
   });
 
-  return `${AUTH_ENDPOINT}?${params.toString()}`;
+  return `${AUTH_ENDPOINT()}?${params.toString()}`;
 }
 
 export function validarState(state) {
-  const corpo = verificar(state); // lança se inválido/expirado
-  if (corpo.tipo !== 'oauth_state') throw new Error('STATE_INVALIDO');
+  let corpo;
+  try {
+    corpo = verificar(state);                    // lança se expirado ou adulterado
+  } catch (e) {
+    throw erroGoogle(`Sessão de login inválida ou expirada (${e.message}). Inicie o login novamente.`,
+      'STATE_INVALIDO', 401);
+  }
+  if (corpo.tipo !== 'oauth_state') {
+    throw erroGoogle('Sessão de login inválida (state com tipo incorreto).', 'STATE_INVALIDO', 401);
+  }
   return corpo.retorno || '/';
 }
 
 /** Troca o `code` pelos tokens e busca o perfil do usuário. */
 export async function trocarCodePorPerfil(code) {
-  const resposta = await fetch(TOKEN_ENDPOINT, {
+  const resposta = await fetch(TOKEN_ENDPOINT(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -70,15 +94,28 @@ export async function trocarCodePorPerfil(code) {
 
   if (!resposta.ok) {
     const detalhe = await resposta.text().catch(() => '');
-    throw new Error(`Falha ao trocar o código por tokens: ${resposta.status} ${detalhe.slice(0, 200)}`);
+    // O Google devolve {"error":"invalid_grant"|"invalid_client", ...}
+    let motivo = '';
+    try { motivo = JSON.parse(detalhe).error || ''; } catch { /* corpo não-JSON */ }
+
+    const dicas = {
+      invalid_grant: 'O código de autorização já foi usado ou expirou. Faça login novamente.',
+      invalid_client: 'GOOGLE_CLIENT_SECRET ou GOOGLE_CLIENT_ID não conferem com os do Google Cloud Console.',
+      redirect_uri_mismatch: 'A GOOGLE_REDIRECT_URI não está cadastrada no Google Cloud Console (URIs de redirecionamento autorizados).'
+    };
+    const mensagem = dicas[motivo] || `Falha ao trocar o código por tokens (HTTP ${resposta.status}).`;
+
+    throw erroGoogle(`${mensagem}${motivo ? ` [${motivo}]` : ''}`, 'GOOGLE_TOKEN_INVALIDO', 401);
   }
 
   const tokens = await resposta.json();
-  const perfil = await fetch(USERINFO_ENDPOINT, {
+  const perfil = await fetch(USERINFO_ENDPOINT(), {
     headers: { Authorization: `Bearer ${tokens.access_token}` }
   });
 
-  if (!perfil.ok) throw new Error(`Falha ao obter o perfil do Google: ${perfil.status}`);
+  if (!perfil.ok) {
+    throw erroGoogle(`O Google recusou a leitura do perfil (HTTP ${perfil.status}).`, 'GOOGLE_PERFIL_FALHOU', 401);
+  }
   const dados = await perfil.json();
 
   return {
@@ -96,15 +133,23 @@ export async function trocarCodePorPerfil(code) {
  * Identity Services no frontend — sem precisar do Client Secret.
  */
 export async function validarCredencial(idToken) {
-  if (!config.auth.google.clientId) throw new Error('GOOGLE_CLIENT_ID não configurado.');
+  if (!config.auth.google.clientId) {
+    throw erroGoogle('GOOGLE_CLIENT_ID não configurado no servidor.', 'GOOGLE_NAO_CONFIGURADO', 503);
+  }
 
-  const resposta = await fetch(`${TOKENINFO_ENDPOINT}?id_token=${encodeURIComponent(idToken)}`);
-  if (!resposta.ok) throw new Error('Credencial do Google inválida ou expirada.');
+  const resposta = await fetch(`${TOKENINFO_ENDPOINT()}?id_token=${encodeURIComponent(idToken)}`);
+  if (!resposta.ok) {
+    throw erroGoogle('Credencial do Google inválida, expirada ou de outra aplicação.', 'CREDENCIAL_INVALIDA', 401);
+  }
 
   const dados = await resposta.json();
 
-  if (dados.aud !== config.auth.google.clientId) throw new Error('A credencial não pertence a esta aplicação.');
-  if (String(dados.email_verified) !== 'true') throw new Error('E-mail do Google não verificado.');
+  if (dados.aud !== config.auth.google.clientId) {
+    throw erroGoogle('A credencial foi emitida para outra aplicação (aud diferente).', 'CREDENCIAL_OUTRA_APLICACAO', 401);
+  }
+  if (String(dados.email_verified) !== 'true') {
+    throw erroGoogle('A conta Google deste e-mail ainda não foi verificada.', 'EMAIL_NAO_VERIFICADO', 401);
+  }
 
   return {
     google_id: dados.sub,

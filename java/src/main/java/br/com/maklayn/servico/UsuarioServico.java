@@ -149,14 +149,25 @@ public class UsuarioServico {
     /** Erro de regra de negócio — traduzido para HTTP pelo @RestControllerAdvice. */
     public static class RegraDeNegocioException extends RuntimeException {
         private final int status;
+        private final String codigo;
 
         public RegraDeNegocioException(String mensagem) {
-            this(mensagem, 400);
+            this(mensagem, 400, "REGRA_DE_NEGOCIO");
         }
 
         public RegraDeNegocioException(String mensagem, int status) {
+            this(mensagem, status, "REGRA_DE_NEGOCIO");
+        }
+
+        /** Código de erro específico — mesmo vocabulário da versão Node. */
+        public RegraDeNegocioException(String mensagem, int status, String codigo) {
             super(mensagem);
             this.status = status;
+            this.codigo = codigo;
+        }
+
+        public String getCodigo() {
+            return codigo;
         }
 
         public int getStatus() {

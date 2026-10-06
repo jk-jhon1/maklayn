@@ -25,6 +25,109 @@ import { gerar, meta as motorMeta } from './motor-mock.js';
 import { SYSTEM_PROMPT, MODE_INSTRUCTIONS, recomendarModo } from './systemPrompt.js';
 
 /* ------------------------------------------------------------------ */
+/* Configuração do login Google na demonstração                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * O fluxo "Google Identity Services" entrega ao navegador um `id_token`
+ * (JWT assinado pelo Google). A verificação usa apenas as CHAVES PÚBLICAS
+ * do Google (JWKS) — por isso funciona sem backend e sem Client Secret.
+ *
+ * O Client ID é informação pública (aparece no HTML de qualquer site).
+ * Defina-o em `config.js` ou cole na tela de login (fica no localStorage).
+ */
+const CONFIG_PADRAO = {
+  googleClientId: '',
+  googleJwksUri: 'https://www.googleapis.com/oauth2/v3/certs'
+};
+
+function configDemo() {
+  const doArquivo = (typeof globalThis !== 'undefined' && globalThis.MAKLAYN_DEMO) || {};
+  let doNavegador = '';
+  try { doNavegador = localStorage.getItem('maklayn-google-client-id') || ''; } catch { /* modo privado */ }
+  return {
+    googleClientId: doArquivo.googleClientId || doNavegador || '',
+    googleJwksUri: doArquivo.googleJwksUri || CONFIG_PADRAO.googleJwksUri
+  };
+}
+
+const b64urlParaTexto = (trecho) => {
+  const base64 = trecho.replace(/-/g, '+').replace(/_/g, '/');
+  const binario = atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '='));
+  const bytes = Uint8Array.from(binario, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+};
+
+const b64urlParaBytes = (trecho) => {
+  const base64 = trecho.replace(/-/g, '+').replace(/_/g, '/');
+  const binario = atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '='));
+  return Uint8Array.from(binario, (c) => c.charCodeAt(0));
+};
+
+/** Busca as chaves públicas do Google (com cache de 1 hora). */
+let chavesGoogle = null;
+async function obterChavesGoogle() {
+  if (chavesGoogle && chavesGoogle.expiraEm > Date.now()) return chavesGoogle.chaves;
+
+  const resposta = await fetch(configDemo().googleJwksUri);
+  if (!resposta.ok) throw new Error('Não foi possível obter as chaves públicas do Google.');
+
+  const dados = await resposta.json();
+  chavesGoogle = { chaves: dados.keys || [], expiraEm: Date.now() + 3600 * 1000 };
+  return chavesGoogle.chaves;
+}
+
+/**
+ * Verifica um id_token do Google exatamente como um servidor faria:
+ * assinatura RS256 (chave pública), emissor, público-alvo, validade e e-mail.
+ * Devolve o conteúdo (claims) ou lança um erro explicativo.
+ */
+async function verificarIdTokenGoogle(idToken, clientId) {
+  const partes = String(idToken).split('.');
+  if (partes.length !== 3) throw new Error('Token malformado.');
+
+  const cabecalho = JSON.parse(b64urlParaTexto(partes[0]));
+  const conteudo = JSON.parse(b64urlParaTexto(partes[1]));
+
+  if (conteudo.iss !== 'accounts.google.com' && conteudo.iss !== 'https://accounts.google.com') {
+    throw new Error('Emissor inesperado no token.');
+  }
+  if (conteudo.aud !== clientId) {
+    throw new Error('Esta credencial foi emitida para outra aplicação (Client ID diferente).');
+  }
+  if (!(conteudo.exp * 1000 > Date.now())) {
+    throw new Error('Token expirado — tente entrar novamente.');
+  }
+  if (conteudo.email_verified === false || conteudo.email_verified === 'false') {
+    throw new Error('A conta Google deste e-mail não está verificada.');
+  }
+
+  // Assinatura: mesma checagem que o backend faz.
+  const chaves = await obterChavesGoogle();
+  const chave = chaves.find((k) => k.kid === cabecalho.kid) || chaves[0];
+  if (!chave) throw new Error('Chave pública correspondente não encontrada.');
+
+  const chaveCripto = await crypto.subtle.importKey(
+    'jwk',
+    { kty: chave.kty, n: chave.n, e: chave.e, alg: 'RS256', ext: true },
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['verify']
+  );
+
+  const assinaturaOk = await crypto.subtle.verify(
+    'RSASSA-PKCS1-v1_5',
+    chaveCripto,
+    b64urlParaBytes(partes[2]),
+    new TextEncoder().encode(`${partes[0]}.${partes[1]}`)
+  );
+
+  if (!assinaturaOk) throw new Error('Assinatura do token inválida.');
+
+  return conteudo;
+}
+
+/* ------------------------------------------------------------------ */
 /* Armazenamento local (papel do banco de dados na demonstração)       */
 /* ------------------------------------------------------------------ */
 
@@ -287,11 +390,14 @@ function rotaPrompt() {
 }
 
 function rotaAuthConfig() {
+  const { googleClientId } = configDemo();
   return respostaJson({
-    google: { configurado: false, client_id: null },
+    google: { configurado: Boolean(googleClientId), client_id: googleClientId || null },
     demo: true,
     provedor_ia: 'mock',
-    aviso: 'Demonstração estática: o login Google OAuth 2.0 exige backend e está disponível na versão completa.'
+    aviso: googleClientId
+      ? 'Login Google ativo nesta demonstração (Google Identity Services + verificação por chaves públicas).'
+      : 'Informe seu Client ID do Google para ativar o login Google nesta demonstração — o botão fica na tela de entrada.'
   });
 }
 
@@ -519,10 +625,52 @@ async function tratar(caminho, metodo, params, corpo) {
     return respostaJson({ ...sugestao, prompt: texto.slice(0, 200) });
   }
   if (metodo === 'POST' && caminho === '/api/auth/google/credential') {
-    return respostaJson({
-      erro: 'DEMO_SEM_BACKEND',
-      mensagem: 'O login Google OAuth 2.0 precisa de servidor (Client Secret nunca vai ao navegador). Use o modo demonstração ou rode a versão completa.'
-    }, 400);
+    const { googleClientId } = configDemo();
+    if (!googleClientId) {
+      return respostaJson({
+        erro: 'GOOGLE_NAO_CONFIGURADO',
+        mensagem: 'Defina o Client ID do Google (campo na tela de login) para usar o login Google nesta demonstração.'
+      }, 503);
+    }
+
+    try {
+      const conteudo = await verificarIdTokenGoogle(corpo.credential ?? corpo.id_token, googleClientId);
+
+      let usuario = banco.usuarios.find((u) => u.google_id === conteudo.sub);
+      if (!usuario) {
+        usuario = banco.usuarios.find((u) => u.email === String(conteudo.email).toLowerCase());
+      }
+      if (!usuario) {
+        banco.seq.usuario += 1;
+        usuario = {
+          id_usuario: banco.seq.usuario,
+          nome_completo: conteudo.name || String(conteudo.email).split('@')[0],
+          email: String(conteudo.email).toLowerCase(),
+          google_id: conteudo.sub,
+          foto_url: conteudo.picture ?? null,
+          papel: 'aluno',
+          data_criacao: agora(),
+          data_acesso: null
+        };
+        banco.usuarios.push(usuario);
+      } else {
+        usuario.google_id = conteudo.sub;                 // conta local que virou conta Google
+        usuario.foto_url = conteudo.picture ?? usuario.foto_url;
+      }
+
+      usuario.data_acesso = agora();
+      gravarBanco(banco);
+      gravarSessao(usuario.id_usuario);
+
+      return respostaJson({
+        autenticado: true,
+        usuario: visaoUsuario(usuario),
+        token: `demo.${btoa(usuario.email)}.local`,
+        demo: true
+      });
+    } catch (e) {
+      return respostaJson({ erro: 'CREDENCIAL_INVALIDA', mensagem: `Login Google recusado: ${e.message}` }, 401);
+    }
   }
 
   // Daqui para baixo exige sessão
@@ -589,6 +737,51 @@ export function instalarDemoMaklayn(escopo = globalThis) {
   return alvo.fetch;
 }
 
+/**
+ * Campo para colar o Client ID do Google direto na tela de login.
+ * Aparece apenas na demonstração e enquanto nenhum Client ID estiver
+ * configurado — assim dá para testar o login Google sem recompilar nada.
+ */
+function injetarCampoClientId() {
+  if (typeof document === 'undefined') return;
+
+  const overlay = document.getElementById('overlayLogin');
+  const area = document.getElementById('areaGoogle');
+  if (!overlay || !area || document.getElementById('campoClientId')) return;
+  if (configDemo().googleClientId) return;         // já configurado: nada a mostrar
+  if (overlay.hidden && !overlay.offsetParent) { /* segue: o overlay abre depois */ }
+
+  const caixa = document.createElement('div');
+  caixa.id = 'campoClientId';
+  caixa.className = 'aviso-caixa';
+  caixa.style.marginTop = '10px';
+  caixa.innerHTML = `
+    <div style="margin-bottom:6px">
+      <strong>Ativar o login Google nesta demonstração</strong><br>
+      Cole o seu <em>Client ID</em> do Google (é público). O passo a passo para criar
+      está em <a href="https://github.com/jk-jhon1/maklayn/blob/main/docs/configurar-login-google.md"
+      target="_blank" rel="noopener">configurar-login-google.md</a>.
+    </div>
+    <div style="display:flex;gap:6px">
+      <input id="inputClientId" placeholder="1234-abc.apps.googleusercontent.com"
+             style="flex:1;padding:8px;border-radius:8px;border:1px solid #ffffff33;
+                    background:#0e1120;color:#e8e9f3;font-size:12px">
+      <button type="button" id="salvarClientId" class="botao ciano pequeno">Usar</button>
+    </div>`;
+
+  caixa.querySelector('#salvarClientId').addEventListener('click', () => {
+    const valor = caixa.querySelector('#inputClientId').value.trim();
+    if (!/apps\.googleusercontent\.com$/.test(valor)) {
+      alert('Isso não parece um Client ID do Google — ele termina em .apps.googleusercontent.com');
+      return;
+    }
+    try { localStorage.setItem('maklayn-google-client-id', valor); } catch { /* modo privado */ }
+    location.reload();
+  });
+
+  area.appendChild(caixa);
+}
+
 /** Aviso flutuante explicando o que esta página é (e o que não é). */
 function mostrarAvisoDemo() {
   if (typeof document === 'undefined' || document.getElementById('avisoDemoMaklayn')) return;
@@ -606,8 +799,9 @@ function mostrarAvisoDemo() {
     <strong style="color:#a58bff">Demonstração estática</strong>
     <div style="margin-top:6px">
       A interface é a mesma do aplicativo; aqui o motor simulado roda no seu navegador
-      e os dados ficam salvos apenas nele. O login Google e o banco relacional
-      funcionam na versão completa.
+      e os dados ficam salvos apenas nele. Para ativar o <strong>login Google</strong>,
+      clique em &ldquo;Entrar&rdquo; e cole o seu Client ID — ou rode a versão completa,
+      com banco relacional e login server-side.
     </div>
     <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
       <a href="https://github.com/jk-jhon1/maklayn" target="_blank" rel="noopener"
@@ -622,7 +816,20 @@ function mostrarAvisoDemo() {
 
 /* Instala automaticamente quando executado no navegador. */
 instalarDemoMaklayn(globalThis);
+
 if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mostrarAvisoDemo);
-  else mostrarAvisoDemo();
+  const aoCarregar = () => {
+    mostrarAvisoDemo();
+    injetarCampoClientId();
+
+    // o overlay de login é aberto/alterado pelo app — observa para reinjetar
+    const overlay = document.getElementById('overlayLogin');
+    if (overlay && typeof MutationObserver !== 'undefined') {
+      new MutationObserver(() => injetarCampoClientId())
+        .observe(overlay, { attributes: true, childList: true, subtree: true });
+    }
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', aoCarregar);
+  else aoCarregar();
 }

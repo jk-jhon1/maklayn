@@ -27,10 +27,10 @@ import java.util.Map;
 @Service
 public class GoogleServico {
 
-    private static final String AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
-    private static final String TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
-    private static final String USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/userinfo";
-    private static final String TOKENINFO_ENDPOINT = "https://oauth2.googleapis.com/tokeninfo";
+    private final String authEndpoint;
+    private final String tokenEndpoint;
+    private final String userinfoEndpoint;
+    private final String tokeninfoEndpoint;
 
     private final String clientId;
     private final String clientSecret;
@@ -40,11 +40,69 @@ public class GoogleServico {
     public GoogleServico(@Value("${maklayn.auth.google.client-id:}") String clientId,
                          @Value("${maklayn.auth.google.client-secret:}") String clientSecret,
                          @Value("${maklayn.auth.google.redirect-uri:}") String redirectUri,
+                         @Value("${maklayn.auth.google.auth-endpoint:https://accounts.google.com/o/oauth2/v2/auth}")
+                             String authEndpoint,
+                         @Value("${maklayn.auth.google.token-endpoint:https://oauth2.googleapis.com/token}")
+                             String tokenEndpoint,
+                         @Value("${maklayn.auth.google.userinfo-endpoint:https://www.googleapis.com/oauth2/v3/userinfo}")
+                             String userinfoEndpoint,
+                         @Value("${maklayn.auth.google.tokeninfo-endpoint:https://oauth2.googleapis.com/tokeninfo}")
+                             String tokeninfoEndpoint,
                          HttpJson http) {
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.redirectUri = redirectUri;
+        this.authEndpoint = authEndpoint;
+        this.tokenEndpoint = tokenEndpoint;
+        this.userinfoEndpoint = userinfoEndpoint;
+        this.tokeninfoEndpoint = tokeninfoEndpoint;
         this.http = http;
+    }
+
+    /**
+     * Erro de autenticação com status HTTP e código de aplicação,
+     * no mesmo vocabulário da versão Node.
+     */
+    public static class ErroGoogle extends RuntimeException {
+        private final int status;
+        private final String codigo;
+
+        public ErroGoogle(String mensagem, String codigo, int status) {
+            super(mensagem);
+            this.codigo = codigo;
+            this.status = status;
+        }
+
+        public int getStatus() {
+            return status;
+        }
+
+        public String getCodigo() {
+            return codigo;
+        }
+    }
+
+    /** Traduz a falha devolvida pelo Google em uma mensagem acionável. */
+    private static String mensagemDaFalha(String respostaBruta) {
+        String motivo = "";
+        int i = respostaBruta.indexOf("\"error\"");
+        if (i >= 0) {
+            int aspas = respostaBruta.indexOf('"', i + 7);
+            if (aspas >= 0) {
+                int fim = respostaBruta.indexOf('"', aspas + 1);
+                if (fim > aspas) motivo = respostaBruta.substring(aspas + 1, fim);
+            }
+        }
+        if ("invalid_grant".equals(motivo)) {
+            return "O código de autorização já foi usado ou expirou. Faça login novamente. [invalid_grant]";
+        }
+        if ("invalid_client".equals(motivo)) {
+            return "GOOGLE_CLIENT_SECRET ou GOOGLE_CLIENT_ID não conferem com os do Google Cloud Console. [invalid_client]";
+        }
+        if ("redirect_uri_mismatch".equals(motivo)) {
+            return "A GOOGLE_REDIRECT_URI não está cadastrada no Google Cloud Console. [redirect_uri_mismatch]";
+        }
+        return "Falha ao trocar o código por tokens" + (motivo.isEmpty() ? "." : " [" + motivo + "]");
     }
 
     public boolean configurado() {
@@ -64,10 +122,11 @@ public class GoogleServico {
      */
     public String urlConsentimento(String state) {
         if (!configurado()) {
-            throw new IllegalStateException(
-                "Google OAuth não configurado: defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET.");
+            throw new ErroGoogle(
+                "Defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no .env (veja o README, item \"Login com Google\").",
+                "GOOGLE_NAO_CONFIGURADO", 503);
         }
-        return AUTH_ENDPOINT
+        return authEndpoint
             + "?client_id=" + enc(clientId)
             + "&redirect_uri=" + enc(redirectUri)
             + "&response_type=code"
@@ -86,13 +145,25 @@ public class GoogleServico {
             + "&redirect_uri=" + enc(redirectUri)
             + "&grant_type=authorization_code";
 
-        JsonNode tokens = http.postForm(TOKEN_ENDPOINT, corpo);
+        JsonNode tokens;
+        try {
+            tokens = http.postForm(tokenEndpoint, corpo);
+        } catch (Exception e) {
+            throw new ErroGoogle(mensagemDaFalha(e.getMessage() == null ? "" : e.getMessage()),
+                "GOOGLE_TOKEN_INVALIDO", 401);
+        }
         String accessToken = tokens.path("access_token").asText("");
         if (accessToken.isBlank()) {
             throw new IllegalStateException("O Google não retornou access_token.");
         }
 
-        JsonNode perfil = http.getJson(USERINFO_ENDPOINT, Map.of("Authorization", "Bearer " + accessToken));
+        JsonNode perfil;
+        try {
+            perfil = http.getJson(userinfoEndpoint, Map.of("Authorization", "Bearer " + accessToken));
+        } catch (Exception e) {
+            throw new ErroGoogle("O Google recusou a leitura do perfil.",
+                "GOOGLE_PERFIL_FALHOU", 401);
+        }
         return converter(perfil, true);
     }
 
@@ -102,16 +173,25 @@ public class GoogleServico {
      */
     public PerfilGoogle validarCredencial(String idToken) throws Exception {
         if (clientId == null || clientId.isBlank()) {
-            throw new IllegalStateException("GOOGLE_CLIENT_ID não configurado.");
+            throw new ErroGoogle("GOOGLE_CLIENT_ID não configurado no servidor.",
+                "GOOGLE_NAO_CONFIGURADO", 503);
         }
 
-        JsonNode dados = http.getJson(TOKENINFO_ENDPOINT + "?id_token=" + enc(idToken), null);
+        JsonNode dados;
+        try {
+            dados = http.getJson(tokeninfoEndpoint + "?id_token=" + enc(idToken), null);
+        } catch (Exception e) {
+            throw new ErroGoogle("Credencial do Google inválida, expirada ou de outra aplicação.",
+                "CREDENCIAL_INVALIDA", 401);
+        }
 
         if (!clientId.equals(dados.path("aud").asText())) {
-            throw new IllegalStateException("A credencial não pertence a esta aplicação.");
+            throw new ErroGoogle("A credencial foi emitida para outra aplicação (aud diferente).",
+                "CREDENCIAL_OUTRA_APLICACAO", 401);
         }
         if (!"true".equals(dados.path("email_verified").asText())) {
-            throw new IllegalStateException("E-mail do Google não verificado.");
+            throw new ErroGoogle("A conta Google deste e-mail ainda não foi verificada.",
+                "EMAIL_NAO_VERIFICADO", 401);
         }
         return converter(dados, true);
     }

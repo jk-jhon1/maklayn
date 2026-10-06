@@ -80,7 +80,8 @@ public class AuthControlador {
     public ResponseEntity<Void> entrarComGoogle() {
         if (!google.configurado()) {
             throw new UsuarioServico.RegraDeNegocioException(
-                "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET não configurados.", 503);
+                "Defina GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no .env (veja o README, item \"Login com Google\").",
+                503, "GOOGLE_NAO_CONFIGURADO");
         }
         // `state` aleatório guardado em cookie httpOnly: o callback só é aceito
         // se o valor devolvido pelo Google for idêntico (proteção CSRF).
@@ -101,11 +102,13 @@ public class AuthControlador {
             return redirecionar("/?erro=" + error);
         }
         if (code == null || code.isBlank()) {
-            throw new UsuarioServico.RegraDeNegocioException("Callback do Google sem o parâmetro 'code'.");
+            throw new UsuarioServico.RegraDeNegocioException(
+                "Callback do Google sem \"code\" ou \"state\".", 400, "CALLBACK_INCOMPLETO");
         }
         if (stateCookie != null && !stateCookie.equals(state)) {
             throw new UsuarioServico.RegraDeNegocioException(
-                "Parâmetro 'state' inválido — possível tentativa de CSRF.", 400);
+                "Sessão de login inválida ou expirada (state não confere). Inicie o login novamente.",
+                401, "STATE_INVALIDO");
         }
 
         try {
@@ -117,8 +120,11 @@ public class AuthControlador {
                 .header(HttpHeaders.LOCATION, "/")
                 .header(HttpHeaders.SET_COOKIE, montarCookie(nomeCookie, token, expiracaoSegundos, false))
                 .build();
+        } catch (GoogleServico.ErroGoogle e) {
+            throw e;                                       // status e código já corretos
         } catch (Exception e) {
-            throw new UsuarioServico.RegraDeNegocioException("Falha no login Google: " + e.getMessage(), 401);
+            throw new UsuarioServico.RegraDeNegocioException(
+                "Falha no login Google: " + e.getMessage(), 401, "GOOGLE_FALHOU");
         }
     }
 
@@ -142,8 +148,11 @@ public class AuthControlador {
             return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, montarCookie(nomeCookie, token, expiracaoSegundos, false))
                 .body(sessao(usuario, token));
+        } catch (GoogleServico.ErroGoogle e) {
+            throw e;                                       // status e código já corretos
         } catch (Exception e) {
-            throw new UsuarioServico.RegraDeNegocioException("Credencial Google inválida: " + e.getMessage(), 401);
+            throw new UsuarioServico.RegraDeNegocioException(
+                "Credencial Google inválida: " + e.getMessage(), 401, "CREDENCIAL_INVALIDA");
         }
     }
 
@@ -213,9 +222,12 @@ public class AuthControlador {
         mapa.put("id_usuario", u.getId());
         mapa.put("nome_completo", u.getNomeCompleto());
         mapa.put("email", u.getEmail());
+        mapa.put("google_id", u.getGoogleId());
         mapa.put("foto_url", u.getFotoUrl());
         mapa.put("papel", u.getPapel());
+        mapa.put("ativo", 1);
         mapa.put("data_criacao", u.getDataCriacao());
+        mapa.put("data_acesso", u.getDataAcesso());
         return mapa;
     }
 

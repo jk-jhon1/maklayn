@@ -8,6 +8,8 @@ import br.com.maklayn.servico.UsuarioServico;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,7 +44,7 @@ public class ReferenciaControlador {
     }
 
     @PostMapping
-    public Map<String, Object> salvar(HttpServletRequest req, @RequestBody Map<String, Object> corpo) {
+    public ResponseEntity<Map<String, Object>> salvar(HttpServletRequest req, @RequestBody Map<String, Object> corpo) {
         Usuario usuario = exigirUsuario(req);
 
         ReferenciaServico.ResultadoSalvar resultado = referencias.salvar(
@@ -54,7 +56,7 @@ public class ReferenciaControlador {
 
         Map<String, Object> referencia = paraMapa(resultado.getReferencia());
         referencia.put("atualizada", resultado.isAtualizada());
-        return Map.of("referencia", referencia);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("referencia", referencia));
     }
 
     @GetMapping
