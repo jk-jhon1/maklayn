@@ -237,3 +237,26 @@ O bytecode sai com `release=11` (major version **55**), garantido pelo `maven-co
 - `mvn test` → **15 testes, 0 falhas** (inclui teste de regressão de um `NullPointerException` real no login sem o campo `papel`).
 - Aplicação executada: `Started MaklaynApplication in 5.0 seconds` na porta 8080.
 - Fluxo validado por HTTP: `health` (banco H2 + motor), login com JWT/cookie, consultas nos **três pilares**, histórico paginado, resumo do painel, salvar referência, exportação ABNT e erros esperados (401 sem login; 400 para prompt vazio e URL inválida).
+
+---
+
+## 11. Publicar no GitHub
+
+O projeto já vem com o histórico Git pronto (2 commits na branch `main`). Para publicar:
+
+```bash
+# Opção 1 — repositório já criado por você no GitHub:
+GITHUB_TOKEN=ghp_xxx GITHUB_REPO=seu-usuario/maklyn bash publicar-github.sh
+
+# Opção 2 — deixe o script criar o repositório:
+GITHUB_TOKEN=ghp_xxx bash publicar-github.sh maklyn public
+```
+
+O token deve ser **fine-grained** (github.com/settings/tokens) com *Contents: Read and write* — e **revogado** depois do push. O script remove o token da configuração do remote ao terminar.
+
+Manualmente, sem o script:
+
+```bash
+git remote add origin https://github.com/SEU-USUARIO/maklyn.git
+git push -u origin main
+```
