@@ -188,27 +188,61 @@ async function carregarConfigLogin() {
       area.appendChild(link);
 
       $('#avisoLogin').hidden = true;
-    } else {
-      const aviso = document.createElement('button');
-      aviso.type = 'button';
-      aviso.className = 'botao ciano bloco';
-      aviso.textContent = '🔐 Entrar com Google';
-      aviso.addEventListener('click', () => {
-        notificar(
-          'Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no .env (veja o README, seção 3) e reinicie o servidor.',
-          'info', 9000
-        );
-      });
-      area.appendChild(aviso);
+      } else if (cfg.google.aceita_client_id_em_tempo_de_execucao) {
+        // O login Google precisa de um Client ID — que é público e pertence à
+        // conta Google de quem publica o site. Aqui ele pode ser colado direto
+        // na tela: sem editar arquivos e sem reiniciar o servidor.
+        const caixa = document.createElement('div');
+        caixa.className = 'aviso-caixa';
+        caixa.id = 'campoClientId';
+        caixa.innerHTML = [
+          '<div style="margin-bottom:8px">',
+          '<strong>🔐 Ativar o login Google</strong><br>',
+          'Cole o seu <em>Client ID</em> (é público, termina em ',
+          '<code>.apps.googleusercontent.com</code>). Depois disso, o botão ',
+          'oficial aparece e mostra a lista de contas Gmail — igual em qualquer site.<br>',
+          '<a href="https://github.com/jk-jhon1/maklayn/blob/main/docs/configurar-login-google.md" ',
+          'target="_blank" rel="noopener">Como criar em 3 minutos →</a>',
+          '</div>',
+          '<div style="display:flex;gap:8px">',
+          '<input id="inputClientId" placeholder="1234567890-abc123.apps.googleusercontent.com" ',
+          'style="flex:1;padding:9px;border-radius:8px;border:1px solid #ffffff33;background:#0e1120;color:#e8e9f3;font-size:12px">',
+          '<button type="button" id="salvarClientId" class="botao ciano pequeno">Ativar</button>',
+          '</div>',
+          '<div id="retornoClientId" style="margin-top:8px"></div>'
+        ].join('');
 
-      if (!$('#avisoGoogleAusente')) {
-        const aviso = document.createElement('div');
-        aviso.className = 'aviso-caixa';
-        aviso.id = 'avisoGoogleAusente';
-        aviso.innerHTML = 'O login Google ainda não está configurado (<code>GOOGLE_CLIENT_ID</code> / <code>GOOGLE_CLIENT_SECRET</code>). O botão acima explica como ativar; por enquanto, use o acesso de demonstração.';
-        area.appendChild(aviso);
+        caixa.querySelector('#salvarClientId').addEventListener('click', async () => {
+          const retorno = caixa.querySelector('#retornoClientId');
+          retorno.textContent = 'Ativando...';
+          try {
+            const r = await api('/auth/google/client-id', {
+              method: 'POST',
+              body: { client_id: caixa.querySelector('#inputClientId').value.trim() }
+            });
+            retorno.style.color = '#4ade80';
+            retorno.textContent = r.mensagem;
+            notificar('Login Google ativado! Recarregando...', 'sucesso');
+            setTimeout(() => location.reload(), 1200);
+          } catch (e) {
+            retorno.style.color = '#f87171';
+            retorno.textContent = e.message;
+          }
+        });
+
+        area.appendChild(caixa);
+      } else {
+        if (!$('#avisoGoogleAusente')) {
+          const aviso = document.createElement('div');
+          aviso.className = 'aviso-caixa';
+          aviso.id = 'avisoGoogleAusente';
+          aviso.innerHTML = 'O login Google precisa de um <code>GOOGLE_CLIENT_ID</code> no <code>.env</code> ' +
+            '(veja <a href="https://github.com/jk-jhon1/maklayn/blob/main/docs/configurar-login-google.md" ' +
+            'target="_blank" rel="noopener">o guia</a>). Enquanto isso, use o acesso de demonstração abaixo — ' +
+            'histórico, referências e IA funcionam normalmente.';
+          area.appendChild(aviso);
+        }
       }
-    }
   } catch (e) {
     console.warn('[maklayn] falha ao ler /auth/config:', e.message);
   }

@@ -15,6 +15,8 @@
 import { Router } from 'express';
 import config from '../config.js';
 import {
+  clientIdAtivo,
+  fluxoServerSideDisponivel,
   googleConfigurado,
   urlConsentimento,
   validarState,
@@ -22,6 +24,11 @@ import {
   validarCredencial
 } from '../auth/google.js';
 import { assinar, definirCookie, limparCookie } from '../auth/jwt.js';
+import {
+  definirClientIdRuntime,
+  permitidoEmTempoDeExecucao,
+  validarFormatoClientId
+} from '../auth/clienteGoogleRuntime.js';
 import { exigirAutenticacao, limitador } from '../auth/middleware.js';
 import * as usuarios from '../services/usuarioService.js';
 
@@ -38,11 +45,16 @@ function sessao(res, usuario, extras = {}) {
 router.get('/config', (_req, res) => {
   res.json({
     google: {
+      // Basta o Client ID para o botão oficial do Google (fluxo GIS).
       configurado: googleConfigurado(),
-      client_id: config.auth.google.clientId || null
+      client_id: clientIdAtivo() || null,
+      // O fluxo server-side (Authorization Code) também exige o Client Secret.
+      fluxo_server_side: fluxoServerSideDisponivel(),
+      // Permite ativar o login Google colando o ID aqui, sem editar arquivos.
+      aceita_client_id_em_tempo_de_execucao: permitidoEmTempoDeExecucao()
     },
     demo: config.auth.google.permitirDemo,
-    provedor_ia: config.ia.provedor
+    provedor_ia: config.ia?.provedor ?? 'mock'
   });
 });
 
@@ -79,6 +91,37 @@ router.get('/google/callback', async (req, res, next) => {
 
     sessao(res, usuario);
     res.redirect(retorno);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/* ------------------------------------------------ Client ID em tempo de execução */
+/**
+ * Permite ativar o login Google pela própria interface (ambiente de
+ * desenvolvimento): o valor é público e fica salvo em .runtime/.
+ */
+router.post('/google/client-id', (req, res, next) => {
+  try {
+    if (!permitidoEmTempoDeExecucao()) {
+      return res.status(403).json({
+        erro: 'RECURSO_DESATIVADO',
+        mensagem: 'Definir o Client ID pela interface está desativado neste ambiente. Use a variável GOOGLE_CLIENT_ID.'
+      });
+    }
+
+    const clientId = String(req.body?.client_id ?? '').trim();
+    const problema = validarFormatoClientId(clientId);
+    if (problema) {
+      return res.status(400).json({ erro: 'CLIENT_ID_INVALIDO', mensagem: problema });
+    }
+
+    definirClientIdRuntime(clientId);
+    res.json({
+      ok: true,
+      mensagem: 'Login Google ativado. Recarregue a página e use o botão do Google.',
+      google: { configurado: true, client_id: clientId }
+    });
   } catch (e) {
     next(e);
   }

@@ -296,15 +296,21 @@ Origens JavaScript autorizadas:      URIs de redirecionamento autorizados:
 
 - **Na demonstração online**: cole o *Client ID* na própria tela de login (ou em `docs/js/config.js`).
   Só o Client ID é necessário — a assinatura do token é conferida com as chaves públicas do Google.
-- **Na aplicação local**: coloque `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no `.env`.
-  O *Client Secret* fica **apenas no backend**, como manda a especificação.
+- **Na aplicação local**: clique em **Entrar** e cole o Client ID no campo *"Ativar o login Google"*
+  (fica salvo em `.runtime/`, sem editar arquivo nem reiniciar). Se preferir, use o `.env`.
+
+Depois disso, o **botão oficial do Google** aparece na tela de login e, ao clicar,
+mostra a **lista de contas Gmail** do usuário — exatamente como em qualquer site.
+Só o *Client ID* é necessário para isso; o *Client Secret* (opcional) habilita também
+o fluxo server-side. Em produção, defina `ALLOW_RUNTIME_CLIENT_ID=false`.
 
 ### Verificação automatizada
 
 ```bash
 npm run teste:login        # 24 verificações — Node/Express
-npm run teste:login:java   # 24 verificações — Java/Spring Boot  (mesmo teste!)
+npm run teste:login:java   # 24 verificações — Java/Spring Boot  (o MESMO teste)
 npm run teste:login:demo   # 11 verificações — demonstração estática
+npm run teste:client-id    # 15 verificações — ativação do Google pela interface
 npm run teste:demo         # 33 verificações — adaptador da demonstração
 ```
 

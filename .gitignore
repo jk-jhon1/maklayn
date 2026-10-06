@@ -55,3 +55,6 @@ desktop.ini
 coverage/
 .nyc_output/
 *.lcov
+
+# Configuração local em tempo de execução (Client ID do Google, etc.)
+.runtime/

@@ -19,6 +19,7 @@
 
 import config from '../config.js';
 import { assinar, verificar } from './jwt.js';
+import { clientIdRuntime } from './clienteGoogleRuntime.js';
 
 /* Endpoints lidos da configuração — permite apontar para um servidor
  * de teste (testes/google-falso.mjs) ou outro provedor OpenID Connect. */
@@ -41,17 +42,37 @@ function erroGoogle(mensagem, codigo = 'GOOGLE_FALHOU', status = 401) {
   return e;
 }
 
-export const googleConfigurado = () =>
-  Boolean(config.auth.google.clientId && config.auth.google.clientSecret);
+/**
+ * Client ID em uso: o definido em tempo de execução (interface) tem
+ * precedência sobre o do `.env` — assim dá para ativar o login Google
+ * sem editar arquivo nem reiniciar o servidor.
+ */
+export const clientIdAtivo = () => clientIdRuntime() || config.auth.google.clientId;
+
+/**
+ * Login Google disponível pelo botão oficial (Google Identity Services).
+ * Basta o Client ID: o Google devolve um id_token assinado e nós
+ * conferimos a assinatura — o Client Secret não participa deste fluxo.
+ */
+export const googleConfigurado = () => Boolean(clientIdAtivo());
+
+/** Fluxo Authorization Code (server-side): este sim exige o Client Secret. */
+export const fluxoServerSideDisponivel = () =>
+  Boolean(clientIdAtivo() && config.auth.google.clientSecret);
 
 /** URL da tela de consentimento do Google, com `state` antifraude. */
 export function urlConsentimento({ retorno = '/' } = {}) {
-  if (!googleConfigurado()) throw new Error('Google OAuth não configurado (GOOGLE_CLIENT_ID/SECRET).');
+  if (!fluxoServerSideDisponivel()) {
+    throw erroGoogle(
+      'O fluxo server-side precisa de GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET. ' +
+      'Para entrar apenas com o Client ID, use o botão do Google na tela de login.',
+      'GOOGLE_NAO_CONFIGURADO', 503);
+  }
 
   const state = assinar({ tipo: 'oauth_state', retorno }, { expiraSegundos: 600 });
 
   const params = new URLSearchParams({
-    client_id: config.auth.google.clientId,
+    client_id: clientIdAtivo(),
     redirect_uri: config.auth.google.redirectUri,
     response_type: 'code',
     scope: 'openid email profile',
@@ -85,7 +106,7 @@ export async function trocarCodePorPerfil(code) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       code,
-      client_id: config.auth.google.clientId,
+      client_id: clientIdAtivo(),
       client_secret: config.auth.google.clientSecret,
       redirect_uri: config.auth.google.redirectUri,
       grant_type: 'authorization_code'
@@ -133,7 +154,8 @@ export async function trocarCodePorPerfil(code) {
  * Identity Services no frontend — sem precisar do Client Secret.
  */
 export async function validarCredencial(idToken) {
-  if (!config.auth.google.clientId) {
+  const clientId = clientIdAtivo();
+  if (!clientId) {
     throw erroGoogle('GOOGLE_CLIENT_ID não configurado no servidor.', 'GOOGLE_NAO_CONFIGURADO', 503);
   }
 
@@ -144,7 +166,7 @@ export async function validarCredencial(idToken) {
 
   const dados = await resposta.json();
 
-  if (dados.aud !== config.auth.google.clientId) {
+  if (dados.aud !== clientId) {
     throw erroGoogle('A credencial foi emitida para outra aplicação (aud diferente).', 'CREDENCIAL_OUTRA_APLICACAO', 401);
   }
   if (String(dados.email_verified) !== 'true') {

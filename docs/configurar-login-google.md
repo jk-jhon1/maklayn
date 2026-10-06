@@ -96,7 +96,12 @@ HTML de qualquer site que usa o Google):
 
 ### 🅱️ Aplicação local (Node ou Java)
 
-No arquivo `.env` (copie de `.env.example` se ainda não tiver):
+**Jeito mais rápido (sem editar arquivos):** rode `bash iniciar.sh`, abra
+http://localhost:3000, clique em **Entrar** e cole o Client ID no campo
+*"Ativar o login Google"*. O botão oficial do Google aparece na hora — e o valor
+fica guardado em `.runtime/` para as próximas execuções.
+
+**Jeito permanente:** no arquivo `.env` (copie de `.env.example` se ainda não tiver):
 
 ```ini
 GOOGLE_CLIENT_ID=1234567890-abcdefghijklmnop.apps.googleusercontent.com
@@ -110,6 +115,12 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
 
 Depois reinicie o servidor. O aviso "Google em modo demonstração" some e o botão
 **"Entrar com Google"** aparece na tela de login.
+
+> ℹ️ O botão oficial do Google — o que abre a **lista de contas Gmail** — precisa
+> apenas do **Client ID**. O `GOOGLE_CLIENT_SECRET` só é necessário se você quiser
+> também o fluxo server-side (`GET /api/auth/google`), que devolve o perfil por
+> redirect. Em produção, defina `ALLOW_RUNTIME_CLIENT_ID=false` para desativar a
+> configuração pela interface.
 
 > ⚠️ **O Client Secret nunca vai para o front-end** — ele fica só no backend,
 > que é quem troca o `code` por tokens (fluxo Authorization Code).
@@ -129,9 +140,10 @@ node testes/google-falso.mjs          # sobe em http://localhost:9099
 E a bateria que já valida tudo (24 verificações em cada backend):
 
 ```bash
-npm run teste:login          # Node (Express)
-npm run teste:login:java     # Java (Spring Boot) — exige o jar: cd java && bash run.sh test
-npm run teste:login:demo     # demonstração estática (verificação via JWKS)
+npm run teste:login        # 24 verificações — Node (Express)
+npm run teste:login:java   # 24 verificações — Java (Spring Boot); exige o jar
+npm run teste:login:demo   # 11 verificações — demonstração estática (JWKS no navegador)
+npm run teste:client-id    # 15 verificações — ativação do Google pela interface
 ```
 
 O que essas verificações cobrem:
@@ -171,6 +183,8 @@ O que essas verificações cobrem:
 | `java/.../seguranca/GoogleServico.java` | Java: mesma lógica, com `ErroGoogle` (status + código) |
 | `java/.../web/AuthControlador.java` | Java: mesmas rotas e códigos de erro |
 | `docs/js/demo-api.js` | Demonstração: verificação da assinatura no navegador (Web Crypto + JWKS) |
+| `src/auth/clienteGoogleRuntime.js` | Node: guarda o Client ID colado na tela (`.runtime/`), desativado em produção |
+| `testes/client-id-interface.teste.mjs` | 15 verificações da ativação pela interface |
 | `testes/google-falso.mjs` | Google emulado para testes offline |
 | `testes/login-google.teste.mjs` | 24 verificações ponta a ponta (serve Node **e** Java) |
 | `testes/login-google-demo.teste.mjs` | 11 verificações do login na demonstração estática |
