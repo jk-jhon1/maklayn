@@ -1,6 +1,7 @@
 # 🤖 MAKLAYN — Assistente de IA Multidisciplinar
 
 [![Repositório](https://img.shields.io/badge/GitHub-jk--jhon1%2Fmaklayn-181717?logo=github)](https://github.com/jk-jhon1/maklayn)
+[![Interface](https://img.shields.io/badge/%F0%9F%96%A5%EF%B8%8F%20abrir%20a%20interface-demonstra%C3%A7%C3%A3o%20online-7c5cff)](https://jk-jhon1.github.io/maklayn/)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Java](https://img.shields.io/badge/Java-JDK%2011%2B-007396?logo=openjdk&logoColor=white)](https://openjdk.org)
 [![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
@@ -13,6 +14,19 @@ Duas implementações equivalentes, com a mesma arquitetura e os mesmos endpoint
 | --- | --- | --- | --- |
 | **JavaScript / Node.js** | Express + MySQL/SQLite + interface web completa | `src/`, `public/` | ✅ testada neste ambiente |
 | **Java / Spring Boot** | Spring Boot 2.7 + JPA + MySQL/H2 · **roda em JDK 11** | `java/` | ✅ compilada, testada e executada em JDK 11 |
+
+---
+
+## 🖥️ Ver a interface (sem instalar nada)
+
+| Forma | Endereço | O que é |
+|---|---|---|
+| **Demonstração online** | **https://jk-jhon1.github.io/maklayn/** | A interface real do Maklayn rodando no GitHub Pages. O motor simulado roda no seu navegador e os dados ficam no `localStorage`. |
+| **Local (completo)** | `bash iniciar.sh` → http://localhost:3000 | Aplicação completa: banco relacional, histórico persistido e login Google OAuth 2.0. |
+
+A demonstração online não tem backend — por isso o **login Google** fica desativado ali
+(ele exige o *Client Secret*, que nunca pode ir ao navegador). Use o **modo demonstração**
+para entrar e testar os três pilares.
 
 ---
 

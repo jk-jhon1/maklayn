@@ -31,7 +31,7 @@ import { SYSTEM_PROMPT, MODE_INSTRUCTIONS, recomendarModo } from './systemPrompt
 const CHAVE_BANCO = 'maklayn-demo-banco-v1';
 const CHAVE_SESSAO = 'maklayn-demo-sessao-v1';
 const TIPOS_VALIDOS = ['Codigo', 'Redacao', 'Pesquisa'];
-const PAPEIS_VALIDOS = ['aluno', 'professor', 'admin'];
+const PAPEIS_VALIDOS = ['aluno', 'dev', 'professor', 'admin']; // mesma lista do backend
 
 function bancoVazio() {
   return {

@@ -64,6 +64,16 @@ r = await chamar('/auth/demo', { method: 'POST', body: { nome: 'Ana Souza', emai
 verificar('POST /auth/demo', r.status === 200 && r.dados.usuario.nome_completo === 'Ana Souza', `papel: ${r.dados.usuario.papel}`);
 r = await chamar('/auth/demo', { method: 'POST', body: { email: 'ana@exemplo.com' } });   // sem nome e sem papel
 verificar('login sem nome/papel (caso do bug corrigido)', r.status === 200 && r.dados.usuario.papel === 'aluno', `nome: ${r.dados.usuario.nome_completo}`);
+r = await chamar('/auth/sair', { method: 'POST' });
+r = await chamar('/auth/demo', { method: 'POST', body: { nome: 'Dev Teste', email: 'dev@exemplo.com', papel: 'dev' } });
+verificar('perfil "dev" é preservado (não vira aluno)', r.dados.usuario.papel === 'dev', `papel: ${r.dados.usuario.papel}`);
+r = await chamar('/auth/sair', { method: 'POST' });
+r = await chamar('/auth/demo', { method: 'POST', body: { nome: 'Novo', email: 'novo@exemplo.com', papel: 'inexistente' } });
+verificar('perfil inválido → aluno (conta nova)', r.dados.usuario.papel === 'aluno', `papel: ${r.dados.usuario.papel}`);
+r = await chamar('/auth/demo', { method: 'POST', body: { email: 'dev@exemplo.com', papel: 'aluno' } });
+verificar('conta existente mantém o próprio perfil', r.dados.usuario.papel === 'dev', `papel: ${r.dados.usuario.papel}`);
+r = await chamar('/auth/sair', { method: 'POST' });
+r = await chamar('/auth/demo', { method: 'POST', body: { nome: 'Ana Souza', email: 'ana@exemplo.com' } });
 r = await chamar('/auth/demo', { method: 'POST', body: { email: 'invalido' } });
 verificar('e-mail inválido → 400', r.status === 400 && r.dados.erro === 'EMAIL_INVALIDO');
 r = await chamar('/auth/demo', { method: 'POST', body: { nome: 'Ana Souza', email: 'ana@exemplo.com' } });
@@ -137,7 +147,7 @@ r = await chamar('/auth/demo', { method: 'POST', body: { email: 'ana@exemplo.com
 r = await chamar('/consultas/resumo');
 verificar('dados sobrevivem ao novo login (localStorage)', r.dados.total >= 3, `total ${r.dados.total} · refs ${r.dados.referencias_salvas}`);
 const bruto = JSON.parse(localStorage.getItem('maklayn-demo-banco-v1'));
-verificar('banco local íntegro', bruto.usuarios.length === 1 && bruto.consultas.length >= 3, `${bruto.usuarios.length} usuário(s), ${bruto.consultas.length} consulta(s), ${bruto.referencias.length} referência(s)`);
+verificar('banco local íntegro', bruto.usuarios.length === 3 && bruto.consultas.length >= 3, `${bruto.usuarios.length} usuário(s), ${bruto.consultas.length} consulta(s), ${bruto.referencias.length} referência(s)`);
 
 console.log(`\n${falhas === 0 ? '✅ TODOS OS TESTES PASSARAM' : `❌ ${falhas} FALHA(S)`}\n`);
 process.exit(falhas === 0 ? 0 : 1);
