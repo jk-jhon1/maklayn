@@ -1,0 +1,118 @@
+### =====================================================================
+###  MAKLAYN — Coleção de requisições (VS Code REST Client / JetBrains HTTP Client)
+###  Versão Node: porta 3000   ·   Versão Java: porta 8080
+###  Fluxo sugerido: execute na ordem (o cookie de sessão é reaproveitado).
+### =====================================================================
+
+@host = http://localhost:3000
+
+### 1. Saúde da aplicação (banco + motor de IA)
+GET {{host}}/api/health
+
+### 2. Status da configuração do sistema
+GET {{host}}/api/status
+
+### 3. System prompt em vigor (auditoria de prompt engineering)
+GET {{host}}/api/prompt
+
+### 4. Login de demonstração (quando não há credenciais Google)
+# @name demo
+POST {{host}}/api/auth/demo
+Content-Type: application/json
+
+{
+  "nome": "Maria Silva",
+  "email": "maria@exemplo.com",
+  "papel": "aluno"
+}
+
+### 5. Login com Google (abrir no navegador — redireciona para a tela do Google)
+GET {{host}}/api/auth/google
+
+### 6. Login via Google Identity Services (id_token do botão do Google)
+POST {{host}}/api/auth/google/credential
+Content-Type: application/json
+
+{
+  "credential": "COLE_AQUI_O_ID_TOKEN"
+}
+
+### 7. Usuário da sessão atual
+GET {{host}}/api/auth/eu
+
+### 8. Consulta no pilar ENGENHARIA DE SOFTWARE
+POST {{host}}/api/consultas
+Content-Type: application/json
+
+{
+  "prompt": "Explique e implemente o padrão Repository em Node.js com testes.",
+  "modo": "Codigo"
+}
+
+### 9. Consulta no pilar REDAÇÃO ENEM
+POST {{host}}/api/consultas
+Content-Type: application/json
+
+{
+  "prompt": "Escreva uma redação sobre o impacto da desinformação digital na formação do jovem brasileiro.",
+  "modo": "Redacao"
+}
+
+### 10. Consulta no pilar PESQUISA ACADÊMICA
+POST {{host}}/api/consultas
+Content-Type: application/json
+
+{
+  "prompt": "Pesquise sobre a evasão escolar no ensino médio brasileiro e indique referências confiáveis.",
+  "modo": "Pesquisa"
+}
+
+### 11. Consulta sem informar o pilar (o Maklayn recomenda automaticamente)
+POST {{host}}/api/consultas
+Content-Type: application/json
+
+{
+  "prompt": "Compare Quick Sort e Merge Sort com análise de complexidade."
+}
+
+### 12. Histórico paginado, com filtro por pilar e busca textual
+GET {{host}}/api/consultas?tipo=Pesquisa&busca=escola&pagina=1&porPagina=20
+
+### 13. Métricas do painel
+GET {{host}}/api/consultas/resumo
+
+### 14. Consulta completa por id
+GET {{host}}/api/consultas/1
+
+### 15. Recomendação de pilar para um texto livre
+POST {{host}}/api/recomendar-modo
+Content-Type: application/json
+
+{
+  "prompt": "Preciso de um resumo com referências bibliográficas sobre o Marco Civil da Internet."
+}
+
+### 16. Salvar uma referência sugerida pela IA
+POST {{host}}/api/referencias
+Content-Type: application/json
+
+{
+  "titulo_link": "SciELO Brasil",
+  "url_referencia": "https://www.scielo.br/",
+  "anotacao": "Base principal da minha pesquisa sobre educação."
+}
+
+### 17. Listar referências salvas
+GET {{host}}/api/referencias
+
+### 18. Exportar referências em formato ABNT (NBR 6023)
+GET {{host}}/api/referencias/abnt
+
+### 19. Remover uma consulta do histórico
+DELETE {{host}}/api/consultas/1
+
+### 20. Remover uma referência
+DELETE {{host}}/api/referencias/1
+
+### 21. Encerrar a sessão
+POST {{host}}/api/auth/sair

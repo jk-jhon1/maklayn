@@ -1,0 +1,79 @@
+# =====================================================================
+#  MAKLAYN (Java / Spring Boot) — Configuração
+#  Todos os valores aceitam sobrescrita por variável de ambiente.
+# =====================================================================
+
+server:
+  port: ${PORT:8080}
+  address: 0.0.0.0
+  compression:
+    enabled: true
+
+spring:
+  application:
+    name: maklayn
+  output:
+    ansi:
+      enabled: always
+
+  # ------------------------------------------------ Banco de dados
+  # Padrão: MySQL (conforme a especificação).
+  # Alternativa rápida para desenvolvimento: perfil "dev" (H2 em memória).
+  datasource:
+    url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/${DB_NAME:maklayn}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Sao_Paulo&characterEncoding=UTF-8
+    username: ${DB_USER:maklayn}
+    password: ${DB_PASSWORD:maklayn}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL:10}
+      pool-name: maklayn-pool
+
+  jpa:
+    hibernate:
+      # O esquema é versionado em src/main/resources/schema.sql (idempotente).
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+# ------------------------------------------------ Maklayn
+maklayn:
+  auth:
+    jwt-secret: ${JWT_SECRET:maklayn-dev-secret-troque-em-producao}
+    jwt-expiracao-segundos: ${JWT_EXPIRA:28800}
+    cookie-nome: maklayn_token
+    permitir-demo: ${ALLOW_DEMO_LOGIN:true}
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+      redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/auth/google/callback}
+
+  ia:
+    # mock | gemini | openai
+    provedor: ${AI_PROVIDER:mock}
+    temperatura: 0.7
+    contexto-mensagens: 8
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      modelo: ${GEMINI_MODEL:gemini-2.0-flash}
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      modelo: ${OPENAI_MODEL:gpt-4o-mini}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+
+logging:
+  level:
+    root: INFO
+    br.com.maklayn: INFO

@@ -1,0 +1,33 @@
+{
+  "name": "maklayn",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Maklayn — Assistente de Inteligência Artificial Multidisciplinar (Engenharia de Software, Redação ENEM e Pesquisa Acadêmica). Backend Node.js/Express + Google OAuth 2.0 + MySQL.",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "node src/db/migrate.js",
+    "db:reset": "node src/db/reset.js"
+  },
+  "keywords": [
+    "maklayn",
+    "ia",
+    "assistente",
+    "enem",
+    "oauth2",
+    "express"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "mysql2": "^3.11.3"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.5.0"
+  }
+}

@@ -1,0 +1,57 @@
+# =====================================================================
+#  MAKLAYN — arquivos ignorados pelo Git
+# =====================================================================
+
+# ------------------------------------------------ Node.js
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.npm/
+package-lock.json.bak
+
+# ------------------------------------------------ Java / Maven
+java/target/
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# ------------------------------------------------ Ambiente e segredos
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ------------------------------------------------ Banco de dados local
+db/*.sqlite
+db/*.sqlite-wal
+db/*.sqlite-shm
+*.db
+*.mdb
+
+# ------------------------------------------------ Logs e temporários
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*~
+
+# ------------------------------------------------ IDEs e sistema
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ------------------------------------------------ Cobertura de testes
+coverage/
+.nyc_output/
+*.lcov

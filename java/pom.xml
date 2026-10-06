@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  =====================================================================
+   MAKLAYN — Assistente de IA Multidisciplinar (versão Java / Spring Boot)
+
+   Compila e roda em JDK 11 — usa Spring Boot 2.7.18 (última linha 2.x),
+   que é a versão compatível com Java 11 (o Spring Boot 3 exige Java 17).
+
+   Compatibilidade:
+     JDK 11 ......... ✔ (alvo deste pom)
+     JDK 17 / 21 .... ✔ (compila com source/target 11)
+
+     mvn test                     # testes (motor simulado + JWT)
+     mvn spring-boot:run -Dspring-boot.run.profiles=dev   # H2 em memória
+     mvn -q package               # gera target/maklayn-java-1.0.0.jar
+     java -jar target/maklayn-java-1.0.0.jar
+  =====================================================================
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.7.18</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>br.com.maklayn</groupId>
+  <artifactId>maklayn-java</artifactId>
+  <version>1.0.0</version>
+  <name>Maklayn</name>
+  <description>Assistente de Inteligência Artificial Multidisciplinar: engenharia de software, redação padrão ENEM e pesquisa acadêmica. Compatível com JDK 11.</description>
+
+  <properties>
+    <java.version>11</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+
+    <!-- Driver MySQL (MySQL 5.7+ / 8.x) — versão explícita: o BOM do Boot 2.7
+         mais recente já migrou para com.mysql:mysql-connector-j -->
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.33</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Banco em memória para o perfil "dev" (sem MySQL instalado) -->
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>maklayn-java-${project.version}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+
+      <!-- Garante bytecode de Java 11 mesmo quando o build roda em JDK 17/21 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <release>11</release>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

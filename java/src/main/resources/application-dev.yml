@@ -1,0 +1,35 @@
+# =====================================================================
+#  MAKLAYN — Perfil "dev": roda SEM MySQL instalado, com banco H2 em
+#  memória no modo de compatibilidade MySQL.
+#
+#     mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# =====================================================================
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:maklayn;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+      continue-on-error: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console      # http://localhost:8080/h2-console (JDBC: jdbc:h2:mem:maklayn)
+
+logging:
+  level:
+    br.com.maklayn: DEBUG

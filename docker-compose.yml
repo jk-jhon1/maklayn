@@ -1,0 +1,52 @@
+# =====================================================================
+#  MAKLAYN — Infraestrutura de desenvolvimento
+#  Sobe o MySQL 8 e o Adminer (interface web para inspecionar o banco).
+#
+#    docker compose up -d
+#    npm run db:migrate      # cria o banco e as tabelas
+#    npm start
+#
+#  Adminer: http://localhost:8080  (Sistema: MySQL, Servidor: db,
+#           Usuário: maklayn, Senha: maklayn, Base: maklayn)
+# =====================================================================
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: maklayn-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: maklayn
+      MYSQL_USER: maklayn
+      MYSQL_PASSWORD: maklayn
+      TZ: America/Sao_Paulo
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=caching_sha2_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - dados_maklayn:/var/lib/mysql
+      - ./db/schema.mysql.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pmaklayn"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:latest
+    container_name: maklayn-adminer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
+volumes:
+  dados_maklayn:
