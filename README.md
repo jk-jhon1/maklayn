@@ -1,6 +1,6 @@
 # 🤖 MAKLAYN — Assistente de IA Multidisciplinar
 
-[![Repositório](https://img.shields.io/badge/GitHub-jk--jhon1%2Fmaklyn-181717?logo=github)](https://github.com/jk-jhon1/maklyn)
+[![Repositório](https://img.shields.io/badge/GitHub-jk--jhon1%2Fmaklyn-181717?logo=github)](https://github.com/jk-jhon1/maklayn)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Java](https://img.shields.io/badge/Java-JDK%2011%2B-007396?logo=openjdk&logoColor=white)](https://openjdk.org)
 [![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
@@ -262,8 +262,8 @@ O token deve ser **fine-grained** (github.com/settings/tokens) com *Contents: Re
 Manualmente, sem o script:
 
 ```bash
-git remote add origin https://github.com/jk-jhon1/maklyn.git
+git remote add origin https://github.com/jk-jhon1/maklayn.git
 git push -u origin main
 ```
 
-Repositório oficial: **https://github.com/jk-jhon1/maklyn**
+Repositório oficial: **https://github.com/jk-jhon1/maklayn**
