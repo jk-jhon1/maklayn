@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maklayn — demonstração — Assistente de IA Multidisciplinar</title>
+  <meta name="description" content="Maklayn: assistente de inteligência artificial para engenharia de software, redação padrão ENEM e pesquisa acadêmica.">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%237c5cff'/><text y='72' x='50' font-size='62' text-anchor='middle' font-family='sans-serif' font-weight='bold' fill='%230b0d17'>M</text></svg>">
+</head>
+<body>
+
+<div class="app">
+  <!-- ============================ BARRA LATERAL ============================ -->
+  <aside class="lateral" id="lateral">
+    <div class="marca">
+      <div class="marca-logo">M</div>
+      <div class="marca-texto">
+        <h1>MAKLAYN</h1>
+        <p>IA Multidisciplinar</p>
+      </div>
+    </div>
+
+    <div>
+      <p class="secao-rotulo">Pilares de atuação</p>
+      <div class="modos" id="modos">
+        <button class="modo ativo" data-modo="Codigo" type="button">
+          <span class="modo-icone">💻</span>
+          <span>
+            <span class="modo-titulo">Engenharia de Software</span>
+            <span class="modo-desc">Código limpo, padrões de projeto e explicações didáticas.</span>
+          </span>
+        </button>
+        <button class="modo" data-modo="Redacao" type="button">
+          <span class="modo-icone">✍️</span>
+          <span>
+            <span class="modo-titulo">Redação ENEM</span>
+            <span class="modo-desc">5 competências, repertório e proposta de intervenção completa.</span>
+          </span>
+        </button>
+        <button class="modo" data-modo="Pesquisa" type="button">
+          <span class="modo-icone">🔎</span>
+          <span>
+            <span class="modo-titulo">Pesquisa Acadêmica</span>
+            <span class="modo-desc">Evidências, citações ABNT e referências reais.</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <p class="secao-rotulo">Navegação</p>
+      <nav class="navegacao" id="navegacao">
+        <button class="nav-item ativo" data-vista="chat" type="button">💬 <span>Conversar</span></button>
+        <button class="nav-item" data-vista="historico" type="button">🗂️ <span>Histórico</span><span class="contador" id="contHistorico">0</span></button>
+        <button class="nav-item" data-vista="referencias" type="button">🔖 <span>Referências</span><span class="contador" id="contReferencias">0</span></button>
+        <button class="nav-item" data-vista="painel" type="button">📊 <span>Painel</span></button>
+        <button class="nav-item" data-vista="motor" type="button">⚙️ <span>Motor e API</span></button>
+      </nav>
+    </div>
+
+    <div class="usuario-cartao">
+      <div class="usuario-linha">
+        <div class="avatar" id="avatarUsuario">?</div>
+        <div style="min-width:0">
+          <div class="usuario-nome" id="nomeUsuario">Visitante</div>
+          <div class="usuario-email" id="emailUsuario">não autenticado</div>
+        </div>
+      </div>
+      <button class="botao pequeno bloco" id="botaoSessao" type="button">Entrar</button>
+      <div class="etiqueta-motor">
+        <span>Motor: <b id="motorAtivo">verificando…</b></span>
+        <span>Banco: <b id="bancoAtivo">—</b></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================== PRINCIPAL ============================== -->
+  <main class="principal">
+    <header class="topo">
+      <button class="botao fantasma botao-menu" id="botaoMenu" type="button">☰</button>
+      <div>
+        <h2 id="tituloVista">Assistente Maklayn</h2>
+        <div class="subtitulo" id="subtituloVista">Engenharia de Software · Redação ENEM · Pesquisa Acadêmica</div>
+      </div>
+      <div class="topo-acoes">
+        <span class="selo" id="seloMotor"><span class="ponto"></span><span id="textoSelo">conectando</span></span>
+        <button class="botao pequeno fantasma" id="botaoLimpar" type="button">Nova conversa</button>
+      </div>
+    </header>
+
+    <div class="conteudo" id="conteudo">
+      <!-- Vista de chat -->
+      <section id="vista-chat">
+        <div class="boas-vindas" id="boasVindas">
+          <h2>Bem-vindo ao Maklayn 👋</h2>
+          <p>Um único assistente, três especialidades. Escolha um pilar na barra lateral ou comece por uma destas sugestões.</p>
+
+          <div class="cartoes">
+            <button class="cartao" data-exemplo="Explique o que é um índice composto no MySQL e mostre um exemplo otimizado com EXPLAIN." type="button">
+              <h3>💻 Otimizar uma consulta SQL</h3>
+              <p>Índice composto, plano de execução e trade-offs.</p>
+            </button>
+            <button class="cartao" data-exemplo="Padrão Repository em Node.js: mostre a estrutura de camadas com um exemplo de serviço e teste." type="button">
+              <h3>💻 Padrão Repository</h3>
+              <p>Camadas, injeção de dependência e testabilidade.</p>
+            </button>
+            <button class="cartao" data-exemplo="Escreva uma redação sobre o impacto da desinformação digital na formação do jovem brasileiro." type="button">
+              <h3>✍️ Redação ENEM completa</h3>
+              <p>Introdução, dois desenvolvimentos e proposta de intervenção.</p>
+            </button>
+            <button class="cartao" data-exemplo="Pesquise sobre os efeitos do uso de celular na aprendizagem e indique referências confiáveis." type="button">
+              <h3>🔎 Pesquisa com referências</h3>
+              <p>Evidências, ABNT e links verificáveis.</p>
+            </button>
+          </div>
+
+          <div class="sugestoes">
+            <button class="sugestao" type="button" data-exemplo="Implemente uma API REST com autenticação JWT em Node.js, usando bcrypt e middleware de autorização.">API REST com JWT</button>
+            <button class="sugestao" type="button" data-exemplo="Compare Quick Sort, Merge Sort e Bubble Sort com análise de complexidade e código.">Algoritmos de ordenação</button>
+            <button class="sugestao" type="button" data-exemplo="Redação sobre a democratização do acesso à internet no Brasil.">Redação: internet no Brasil</button>
+            <button class="sugestao" type="button" data-exemplo="Pesquise dados atualizados sobre segurança pública no Brasil com fontes oficiais.">Segurança pública (fontes)</button>
+            <button class="sugestao" type="button" data-exemplo="Explique programação assíncrona em JavaScript: event loop, promises e async/await.">Event loop e async/await</button>
+          </div>
+        </div>
+
+        <div class="conversa" id="conversa"></div>
+      </section>
+
+      <!-- Vista de histórico -->
+      <section id="vista-historico" hidden>
+        <div class="painel">
+          <div class="filtros">
+            <input type="search" id="buscaHistorico" placeholder="Buscar no histórico…">
+            <select id="filtroTipo">
+              <option value="">Todos os pilares</option>
+              <option value="Codigo">Código</option>
+              <option value="Redacao">Redação</option>
+              <option value="Pesquisa">Pesquisa</option>
+            </select>
+            <button class="botao pequeno fantasma" id="botaoAtualizarHistorico" type="button">Atualizar</button>
+          </div>
+          <div class="lista" id="listaHistorico"></div>
+        </div>
+      </section>
+
+      <!-- Vista de referências -->
+      <section id="vista-referencias" hidden>
+        <div class="painel">
+          <div class="filtros">
+            <input type="search" id="buscaReferencias" placeholder="Buscar referências salvas…">
+            <button class="botao pequeno fantasma" id="botaoExportarAbnt" type="button">Exportar ABNT</button>
+            <button class="botao pequeno primario" id="botaoNovaReferencia" type="button">+ Referência</button>
+          </div>
+          <div id="formReferencia" hidden>
+            <div class="item" style="gap:11px">
+              <div class="campo"><label for="refTitulo">Título</label><input id="refTitulo" placeholder="Ex.: Constituição Federal de 1988"></div>
+              <div class="campo"><label for="refUrl">URL</label><input id="refUrl" placeholder="https://…"></div>
+              <div class="campo"><label for="refAnotacao">Anotação (opcional)</label><input id="refAnotacao" placeholder="Como pretendo usar esta fonte"></div>
+              <div style="display:flex;gap:8px">
+                <button class="botao pequeno primario" id="botaoSalvarReferencia" type="button">Salvar</button>
+                <button class="botao pequeno fantasma" id="botaoCancelarReferencia" type="button">Cancelar</button>
+              </div>
+            </div>
+          </div>
+          <div class="lista" id="listaReferencias"></div>
+        </div>
+      </section>
+
+      <!-- Vista de painel -->
+      <section id="vista-painel" hidden>
+        <div class="painel">
+          <div class="estatisticas" id="cartoesEstatistica"></div>
+          <div class="item">
+            <h3 class="item-titulo">Distribuição por pilar</h3>
+            <div id="barrasPilar"></div>
+          </div>
+          <div class="item">
+            <h3 class="item-titulo">Últimos dias de uso</h3>
+            <div id="graficoDias"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vista de motor -->
+      <section id="vista-motor" hidden>
+        <div class="painel">
+          <div class="item">
+            <h3 class="item-titulo">🔌 Motores de IA disponíveis</h3>
+            <p class="item-resumo">O Maklayn usa um roteador de provedores: troque o motor mudando <code>AI_PROVIDER</code> no <code>.env</code>, sem alterar o restante do sistema.</p>
+            <div class="lista" id="listaProvedores"></div>
+          </div>
+          <div class="item">
+            <h3 class="item-titulo">🧠 System prompt em vigor</h3>
+            <p class="item-resumo">Texto injetado como instrução de sistema (auditoria de prompt engineering).</p>
+            <div id="visorPrompt"></div>
+          </div>
+          <div class="item">
+            <h3 class="item-titulo">🗄️ Banco de dados</h3>
+            <div id="infoBanco"></div>
+          </div>
+          <div class="item">
+            <h3 class="item-titulo">🔐 Login com Google (OAuth 2.0)</h3>
+            <div id="infoGoogle"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============================ CAIXA DE ENTRADA ============================ -->
+    <div class="entrada-area" id="areaEntrada">
+      <div class="entrada">
+        <textarea id="prompt" rows="1" placeholder="Pergunte ao Maklayn… (Shift + Enter para nova linha)"></textarea>
+        <div class="entrada-rodape">
+          <div class="mini-modos" id="miniModos">
+            <button class="mini-modo ativo" data-modo="Codigo" type="button">Código</button>
+            <button class="mini-modo" data-modo="Redacao" type="button">Redação</button>
+            <button class="mini-modo" data-modo="Pesquisa" type="button">Pesquisa</button>
+          </div>
+          <span class="entrada-dica"><kbd>Enter</kbd> envia · <kbd>Shift</kbd>+<kbd>Enter</kbd> quebra linha</span>
+          <button class="botao primario" id="botaoEnviar" type="button">Enviar ▸</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================================= LOGIN ================================= -->
+<div class="overlay" id="overlayLogin" hidden>
+  <div class="login-caixa">
+    <div class="marca">
+      <div class="marca-logo">M</div>
+      <div class="marca-texto"><h1>MAKLAYN</h1><p>IA Multidisciplinar</p></div>
+    </div>
+    <h2>Entrar</h2>
+    <p class="sub">Entre com sua conta Google para salvar histórico e referências.</p>
+
+    <div id="areaGoogle"></div>
+
+    <div class="divisor">ou acesso de demonstração</div>
+
+    <div class="aviso-caixa" id="avisoLogin">
+      Sem credenciais do Google neste ambiente? Use o acesso de demonstração abaixo — histórico, referências e banco de dados continuam funcionando normalmente.
+    </div>
+
+    <form id="formDemo" style="display:flex;flex-direction:column;gap:13px">
+      <div class="campo">
+        <label for="loginNome">Nome completo</label>
+        <input id="loginNome" placeholder="Maria Silva" autocomplete="name">
+      </div>
+      <div class="campo">
+        <label for="loginEmail">E-mail</label>
+        <input id="loginEmail" type="email" placeholder="maria@exemplo.com" autocomplete="email" required>
+      </div>
+      <div class="campo">
+        <label for="loginPapel">Perfil de uso</label>
+        <select id="loginPapel">
+          <option value="aluno">Estudante</option>
+          <option value="dev">Desenvolvedor(a)</option>
+          <option value="professor">Professor(a)</option>
+        </select>
+      </div>
+      <button class="botao primario bloco" type="submit">Entrar em modo demonstração</button>
+      <button class="botao ciano bloco pequeno" id="botaoVisitante" type="button">⚡ Acesso rápido de visitante</button>
+    </form>
+
+    <button class="botao fantasma bloco pequeno" id="botaoFecharLogin" type="button">Continuar sem login (só leitura)</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<!-- Adaptador da demonstração estática: responde /api/* no navegador -->
+  <script type="module" src="js/demo-api.js"></script>
+  <!-- Aplicação real (a mesma usada na versão Node/Java) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
